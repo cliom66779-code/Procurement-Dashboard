@@ -5,6 +5,8 @@ import { type PriceData, type TimeRange } from '../utils/formatters';
 // 定義支援的品項
 export type CommodityId = 'palm-oil' | 'soybeans' | 'wheat' | 'sugar';
 
+const GITHUB_RAW = 'https://raw.githubusercontent.com/cliom66779-code/Procurement-Dashboard/main/public/data';
+
 export const COMMODITIES_CONFIG: Record<CommodityId, { label: string, file: string, unit: string }> = {
   'palm-oil': { label: '棕櫚油', file: 'palm_oil_prices.json', unit: 'MYR/TONNE' },
   'soybeans': { label: '黃豆', file: 'soybeans_prices.json', unit: 'USd/bu' },
@@ -23,7 +25,7 @@ export const useCommodityData = (commodityId: CommodityId, range: TimeRange) => 
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/data/${config.file}?v=${new Date().getTime()}`);
+        const res = await fetch(`${GITHUB_RAW}/${config.file}?t=${new Date().getTime()}`);
         if (!res.ok) throw new Error("API Fetch failed");
         const raw = await res.json();
         
