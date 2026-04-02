@@ -23,7 +23,7 @@ export const useCommodityData = (commodityId: CommodityId, range: TimeRange) => 
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/data/${config.file}`, { cache: "no-store" });
+        const res = await fetch(`/data/${config.file}?v=${new Date().getTime()}`);
         if (!res.ok) throw new Error("API Fetch failed");
         const raw = await res.json();
         
