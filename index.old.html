@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crude Palm Oil 棕櫚油｜行情分析儀表板</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --card:#ffffff;
+      --text:#0f172a;
+      --sub:#64748b;
+      --blue:#2563eb;
+      --blue-2:#3b82f6;
+      --red:#ef4444;
+      --yellow:#f59e0b;
+      --green:#22c55e;
+      --border:#e5e7eb;
+      --shadow:0 8px 24px rgba(15,23,42,0.06);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: "Segoe UI","Microsoft JhengHei","PingFang TC",sans-serif;
+    }
+
+    .wrap{
+      max-width:1360px;
+      margin:0 auto;
+      padding:22px 24px 36px;
+    }
+
+    .title{
+      font-size:24px;
+      font-weight:800;
+      margin-bottom:6px;
+      letter-spacing:.2px;
+    }
+
+    .subtitle{
+      font-size:14px;
+      color:var(--sub);
+      margin-bottom:18px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      margin-bottom:22px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border:none;
+      background:#fff;
+      color:#1e293b;
+      border-radius:999px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:var(--shadow);
+      transition:.2s ease;
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .btn.active{
+      background:var(--blue);
+      color:#fff;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap:18px;
+      margin-bottom:24px;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
+      padding:22px 20px 18px;
+      min-height:160px;
+    }
+
+    .card-label{
+      font-size:15px;
+      color:#334155;
+      margin-bottom:16px;
+    }
+
+    .card-value{
+      font-size:28px;
+      font-weight:800;
+      line-height:1.1;
+      margin-bottom:18px;
+      letter-spacing:.2px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      padding:8px 13px;
+      border-radius:999px;
+      background:#eef2ff;
+      color:#4338ca;
+      white-space:nowrap;
+    }
+
+    .kpi-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .kpi-light{
+      width:40px;
+      height:40px;
+      border-radius:50%;
+      box-shadow: inset 0 8px 16px rgba(255,255,255,0.35), 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .kpi-red{
+      background: radial-gradient(circle at 30% 30%, #ff9a9a 0%, #ef4444 55%, #d91c1c 100%);
+    }
+    .kpi-yellow{
+      background: radial-gradient(circle at 30% 30%, #ffe7a3 0%, #f59e0b 55%, #d97706 100%);
+    }
+    .kpi-green{
+      background: radial-gradient(circle at 30% 30%, #bbf7d0 0%, #22c55e 55%, #15803d 100%);
+    }
+
+    .chart-card{
+      background:var(--card);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
+      padding:18px 18px 10px;
+    }
+
+    .chart-title{
+      font-size:18px;
+      font-weight:800;
+      margin:8px 4px 10px;
+    }
+
+    #chart{
+      width:100%;
+      height:470px;
+    }
+
+    .footer-note{
+      margin-top:14px;
+      font-size:12px;
+      color:var(--sub);
+    }
+
+    @media (max-width: 1180px){
+      .grid{
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 680px){
+      .wrap{
+        padding:16px;
+      }
+      .grid{
+        grid-template-columns: 1fr;
+      }
+      .card-value{
+        font-size:24px;
+      }
+      #chart{
+        height:400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">Crude Palm Oil 棕櫚油</div>
+    <div class="subtitle" id="subtitle">
+      來源：MPOB BEPI ｜ 單位維持原網站顯示 MYR/TONNE ｜ 歷史資料已匯入
+    </div>
+
+    <div class="toolbar">
+      <button class="btn active" data-range="3y">近3年</button>
+      <button class="btn" data-range="1y">近1年</button>
+      <button class="btn" data-range="6m">近6個月</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">最新價格 (MYR/TONNE)</div>
+        <div class="card-value" id="latestPrice">--</div>
+        <div class="pill" id="latestVsMa30">--</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">今日漲跌 %</div>
+        <div class="card-value" id="dailyChange">--</div>
+        <div class="pill" id="dailyDirection">--</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">7日均價</div>
+        <div class="card-value" id="avg7">--</div>
+        <div class="pill" id="avg7Note">近 7 筆有效報價</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">30日均價</div>
+        <div class="card-value" id="avg30">--</div>
+        <div class="pill" id="avg30Note">近 30 筆有效報價</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">KPI 燈號</div>
+        <div class="kpi-wrap">
+          <div class="kpi-light kpi-yellow" id="kpiLight"></div>
+          <div class="pill" id="kpiText">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title" id="chartTitle">Crude Palm Oil 棕櫚油 (近3年 / MYR/TONNE)</div>
+      <div id="chart"></div>
+      <div class="footer-note">
+        KPI 僅為行情觀察燈號：以最新價格相對 30 日均價之偏離幅度顯示。
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // 內建示範資料（若 json 讀不到時使用）
+    // 格式：[{date:"2024-01-02", price:3620.5}, ...]
+    // =========================
+    function generateFallbackData() {
+      const result = [];
+      const start = new Date("2024-01-02");
+      const today = new Date("2026-03-31");
+      let i = 0;
+
+      while (start <= today) {
+        const day = start.getDay();
+        if (day !== 0 && day !== 6) {
+          const t = i / 22;
+          let price =
+            3950
+            + Math.sin(t) * 180
+            + Math.sin(t / 2.7) * 240
+            + Math.sin(t / 7.5) * 120
+            + (i > 180 ? 220 : 0)
+            + (i > 280 ? -260 : 0)
+            + (i > 360 ? 140 : 0)
+            + (i > 470 ? -180 : 0)
+            + (i > 540 ? 260 : 0)
+            + (Math.random() - 0.5) * 120;
+
+          price = Math.max(3550, Math.min(5350, price));
+
+          result.push({
+            date: start.toISOString().slice(0, 10),
+            price: Number(price.toFixed(2))
+          });
+          i++;
+        }
+        start.setDate(start.getDate() + 1);
+      }
+
+      // 最後幾筆手動拉高，模擬近期上升
+      const lastNudges = [35, 60, 88, 95, 120];
+      for (let j = 0; j < lastNudges.length; j++) {
+        const idx = result.length - 1 - j;
+        if (idx >= 0) result[idx].price = Number((result[idx].price + lastNudges[j]).toFixed(2));
+      }
+
+      return result;
+    }
+
+    // =========================
+    // 工具
+    // =========================
+    function formatNumber(num) {
+      return Number(num).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function mean(arr) {
+      if (!arr.length) return null;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function movingAverage(values, windowSize) {
+      const result = [];
+      for (let i = 0; i < values.length; i++) {
+        if (i < windowSize - 1) {
+          result.push(null);
+        } else {
+          const slice = values.slice(i - windowSize + 1, i + 1);
+          result.push(mean(slice));
+        }
+      }
+      return result;
+    }
+
+    function getRangeStartDate(endDateStr, rangeKey) {
+      const d = new Date(endDateStr);
+      const x = new Date(d);
+
+      if (rangeKey === "6m") {
+        x.setMonth(x.getMonth() - 6);
+      } else if (rangeKey === "1y") {
+        x.setFullYear(x.getFullYear() - 1);
+      } else {
+        x.setFullYear(x.getFullYear() - 3);
+      }
+      return x;
+    }
+
+    function filterByRange(data, rangeKey) {
+      if (!data.length) return [];
+      const lastDate = data[data.length - 1].date;
+      const startDate = getRangeStartDate(lastDate, rangeKey);
+      return data.filter(d => new Date(d.date) >= startDate);
+    }
+
+    function getLastValid(arr, count) {
+      return arr.slice(-count);
+    }
+
+    function calcKPI(latest, ma30) {
+      if (ma30 == null || ma30 === 0) {
+        return { cls: "kpi-yellow", text: "資料不足" };
+      }
+
+      const diffPct = ((latest - ma30) / ma30) * 100;
+
+      if (diffPct >= 5) {
+        return {
+          cls: "kpi-red",
+          text: `高於30MA ${diffPct.toFixed(2)}%`
+        };
+      } else if (diffPct <= -5) {
+        return {
+          cls: "kpi-green",
+          text: `低於30MA ${Math.abs(diffPct).toFixed(2)}%`
+        };
+      } else {
+        return {
+          cls: "kpi-yellow",
+          text: `接近30MA ${diffPct.toFixed(2)}%`
+        };
+      }
+    }
+
+    function calcDailyChange(prices) {
+      if (prices.length < 2) {
+        return { pct: null, text: "資料不足" };
+      }
+      const latest = prices[prices.length - 1];
+      const prev = prices[prices.length - 2];
+      const pct = ((latest - prev) / prev) * 100;
+
+      let text = "持平";
+      if (pct > 0) text = "上漲";
+      else if (pct < 0) text = "下跌";
+
+      return { pct, text };
+    }
+
+    // =========================
+    // 狀態
+    // =========================
+    let fullData = [];
+    let currentRange = "3y";
+    let sourceLabel = "MPOB BEPI";
+
+    // =========================
+    // 畫面更新
+    // =========================
+    function updateDashboard() {
+      const ranged = filterByRange(fullData, currentRange);
+      if (!ranged.length) return;
+
+      const dates = ranged.map(d => d.date);
+      const prices = ranged.map(d => Number(d.price));
+      const ma30 = movingAverage(prices, 30);
+
+      const latestPrice = prices[prices.length - 1];
+      const avg7 = mean(getLastValid(prices, 7));
+      const avg30 = mean(getLastValid(prices, 30));
+      const daily = calcDailyChange(prices);
+      const kpi = calcKPI(latestPrice, avg30);
+
+      // 卡片
+      document.getElementById("latestPrice").textContent = formatNumber(latestPrice);
+
+      const latestVs30Pct = avg30 ? ((latestPrice - avg30) / avg30) * 100 : null;
+      if (latestVs30Pct == null) {
+        document.getElementById("latestVsMa30").textContent = "--";
+      } else {
+        const prefix = latestVs30Pct >= 0 ? "高於30MA " : "低於30MA ";
+        document.getElementById("latestVsMa30").textContent =
+          `${prefix}${Math.abs(latestVs30Pct).toFixed(2)}%`;
+      }
+
+      if (daily.pct == null) {
+        document.getElementById("dailyChange").textContent = "--";
+        document.getElementById("dailyDirection").textContent = "資料不足";
+      } else {
+        const sign = daily.pct > 0 ? "+" : "";
+        document.getElementById("dailyChange").textContent = `${sign}${daily.pct.toFixed(2)}%`;
+        document.getElementById("dailyDirection").textContent = daily.text;
+      }
+
+      document.getElementById("avg7").textContent = avg7 == null ? "--" : formatNumber(avg7);
+      document.getElementById("avg30").textContent = avg30 == null ? "--" : formatNumber(avg30);
+
+      const kpiLight = document.getElementById("kpiLight");
+      kpiLight.className = `kpi-light ${kpi.cls}`;
+      document.getElementById("kpiText").textContent = kpi.text;
+
+      // 標題
+      const rangeTextMap = {
+        "3y":"近3年",
+        "1y":"近1年",
+        "6m":"近6個月"
+      };
+      document.getElementById("chartTitle").textContent =
+        `Crude Palm Oil 棕櫚油 (${rangeTextMap[currentRange]} / MYR/TONNE)`;
+
+      document.getElementById("subtitle").textContent =
+        `來源：${sourceLabel} ｜ 單位維持原網站顯示 MYR/TONNE ｜ 歷史資料已匯入`;
+
+      // 圖表
+      const tracePrice = {
+        x: dates,
+        y: prices,
+        type: "scatter",
+        mode: "lines",
+        name: "價格",
+        line: {
+          color: "#2563eb",
+          width: 3
+        },
+        hovertemplate: "日期：%{x}<br>價格：%{y:,.2f} MYR/TONNE<extra></extra>"
+      };
+
+      const traceMA30 = {
+        x: dates,
+        y: ma30,
+        type: "scatter",
+        mode: "lines",
+        name: "30MA",
+        line: {
+          color: "#ef4444",
+          width: 2.2
+        },
+        hovertemplate: "日期：%{x}<br>30MA：%{y:,.2f}<extra></extra>"
+      };
+
+      const layout = {
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#ffffff",
+        margin: { l: 70, r: 20, t: 10, b: 55 },
+        hovermode: "x unified",
+        showlegend: false,
+        xaxis: {
+          title: {
+            text: "日期",
+            standoff: 8,
+            font: { size: 12, color: "#475569" }
+          },
+          tickfont: { color: "#64748b" },
+          gridcolor: "rgba(0,0,0,0)",
+          zeroline: false
+        },
+        yaxis: {
+          title: {
+            text: "MYR/TONNE",
+            font: { size: 12, color: "#475569" }
+          },
+          tickfont: { color: "#64748b" },
+          gridcolor: "#e5e7eb",
+          zeroline: false,
+          tickformat: ",.0f"
+        }
+      };
+
+      const config = {
+        responsive: true,
+        displayModeBar: false
+      };
+
+      Plotly.newPlot("chart", [tracePrice, traceMA30], layout, config);
+    }
+
+    // =========================
+    // 讀取資料
+    // 預期檔案：data/palm_oil_prices.json
+    // 格式範例：
+    // [
+    //   {"date":"2024-01-02","price":3620.50},
+    //   {"date":"2024-01-03","price":3655.00}
+    // ]
+    // =========================
+    async function loadData() {
+      try {
+        const res = await fetch("data/palm_oil_prices.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("json not found");
+
+        const raw = await res.json();
+        if (!Array.isArray(raw) || !raw.length) throw new Error("invalid data");
+
+        fullData = raw
+          .map(d => ({
+            date: d.date,
+            price: Number(d.price)
+          }))
+          .filter(d => d.date && !Number.isNaN(d.price))
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        sourceLabel = "MPOB BEPI";
+      } catch (e) {
+        fullData = generateFallbackData();
+        sourceLabel = "MPOB BEPI（示範資料模式）";
+      }
+
+      updateDashboard();
+    }
+
+    // =========================
+    // 綁定區間按鈕
+    // =========================
+    document.querySelectorAll(".btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".btn").forEach(x => x.classList.remove("active"));
+        btn.classList.add("active");
+        currentRange = btn.dataset.range;
+        updateDashboard();
+      });
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
